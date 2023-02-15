@@ -22,6 +22,7 @@ const blogSlice = createSlice({
   name: 'blog',
   initialState,
   reducers: {
+    // không được xử lý bất đồng bộ hay call api trong reducers này
     deleteItemPost: (state, action: PayloadAction<string>) => {
       const postId = action.payload
       console.log(current(state))
@@ -50,6 +51,7 @@ const blogSlice = createSlice({
         state.postList.push(post)
       },
       prepare: (post: Omit<Post, 'id'>) => {
+        // trước khi reducer phía trên của lệnh addPost này được chạy thì nó sẽ chạy thằng này trước để xử lý id hoặc điều gì khác mà ta muốn trước, rồi mới chạy vào reducer phía trên
         return {
           payload: {
             ...post,
@@ -58,6 +60,21 @@ const blogSlice = createSlice({
         }
       }
     }
+  },
+  extraReducers(builder) {
+    // vì những hàm addMatcher và hàm default sẽ không chạy ở reducers, nên ta phải add extraReducers này vào thì mới chạy được 2 hàm kìa
+    // addMatcher này khi nó thỏa true ở param callback ban đầu thì nó sẽ chạy hàm này, ở đây thì ta xử lý khi hàm nào mà trong đó có đoạn string 'delete' chạy thì nó sẽ thỏa true rồi chạy tới param thứ 2
+    // nếu nó không thỏa true ở addMatcher thì nó sẽ tự động chạy vào mặc định addDefaultCase
+    builder
+      .addMatcher(
+        (action) => action.type.includes('delete'),
+        (state) => {
+          console.log('đã thỏa addMatcher:', current(state))
+        }
+      )
+      .addDefaultCase((state, action) => {
+        console.log('không thỏa addMatcher:', current(state))
+      })
   }
 })
 export const {
@@ -126,6 +143,7 @@ const blogReducer = createReducer(initialState, (builder) => {
       state.itemEdit = null
     })
     .addMatcher(
+    // addMatcher này khi nó thỏa true ở param callback ban đầu thì nó sẽ chạy hàm này, ở đây thì ta xử lý khi hàm nào mà trong đó có đoạn string 'delete' chạy thì nó sẽ thỏa true rồi chạy tới param thứ 2
       (action) => action.type.includes('delete'),
       (state, action) => {
         console.log(current(state))
