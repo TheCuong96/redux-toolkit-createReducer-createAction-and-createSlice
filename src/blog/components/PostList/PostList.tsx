@@ -1,9 +1,49 @@
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import PostItem from '../PostItem'
-import { RootState } from 'store'
+import { RootState, useAppDispatch } from 'store'
+import { useEffect } from 'react'
+import http from 'utils/http'
+import { getPostList } from 'blog/blog.reducer'
+
+// gọi api trong useEffect()
+// nếu gọi thành công thì dispatch action type: "blog/getPostListSuccess"
+// nếu gọi thất bại thì dispatch action type: "blog/getPostListFailed"
+
+// khi đã có data thì dispatch action type "blog/getPostList"
 
 export default function PostList() {
   const postList = useSelector((state: RootState) => state.blog.postList)
+  const dispatch = useAppDispatch()
+  // const dispatch = useDispatch()
+  /** 
+   *  khi dùng thằng createAsyncThunk thì không nên dùng thằng này nữa
+  useEffect(() => {
+    const controller = new AbortController() // vì <React.StrictMode> của react tự động bắt lỗi gọi api tới 2 lần, nên ta tắt 1 lần đi bằng cách dùng thằng controller này và return về controller.abort() như bên dưới
+    http
+      .get('posts', { signal: controller.signal })
+      .then((res) => {
+        console.log(res)
+        const data = res.data
+        dispatch({ type: 'blog/getPostListSuccess', payload: data })
+      })
+      .catch((error) => {
+        console.log(error)
+        if (!(error.code === 'ERR_CANCELED')) {
+          dispatch({ type: 'blog/getPostListFailed', payload: error })
+        }
+      })
+
+    return () => {
+      controller.abort()
+    }
+  }, [dispatch])
+*/
+
+  useEffect(() => {
+    const promise = dispatch(getPostList())
+    return () => promise.abort() // vì <React.StrictMode> của react tự động bắt lỗi gọi api tới 2 lần, nên ta tắt 1 lần đi bằng cách xử lý như vậy
+  }, [dispatch])
+
   return (
     <div className='bg-white py-6 sm:py-8 lg:py-12'>
       <div className='mx-auto max-w-screen-xl px-4 md:px-8'>

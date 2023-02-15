@@ -1,5 +1,6 @@
-import { deleteItemPost, editingItemPost } from 'blog/blog.reducer'
+import { deletePost, editingItemPost } from 'blog/blog.reducer'
 import { useDispatch } from 'react-redux'
+import { useAppDispatch } from 'store'
 import { Post } from 'types/blog.type'
 
 interface PostItemType {
@@ -7,8 +8,8 @@ interface PostItemType {
 }
 
 export default function PostItem({ post }: PostItemType) {
-  const dispatch = useDispatch()
-  
+  // const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   return (
     <div className='flex flex-col items-center overflow-hidden rounded-lg border md:flex-row'>
       <div className='group relative block h-48 w-full shrink-0 self-start overflow-hidden bg-gray-100 md:h-full md:w-32 lg:w-48'>
@@ -35,7 +36,7 @@ export default function PostItem({ post }: PostItemType) {
             <button
               type='button'
               className='rounded-r-lg border-t border-b border-r border-gray-200 bg-white py-2 px-4 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700'
-              onClick={() => dispatch(deleteItemPost(post.id))}
+              onClick={() => dispatch(deletePost(post.id))}
             >
               Delete
             </button>

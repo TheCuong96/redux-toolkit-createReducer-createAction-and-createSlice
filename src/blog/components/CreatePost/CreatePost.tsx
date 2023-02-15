@@ -1,11 +1,13 @@
 import {
   addPost,
   cancelEditingItemPost,
-  finishEditingItemPost
+  // editingItemPost,
+  editingPost
+  // finishEditingItemPost
 } from 'blog/blog.reducer'
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { RootState } from 'store'
+import { RootState, useAppDispatch } from 'store'
 import { Post } from 'types/blog.type'
 
 const initialState: Post = {
@@ -21,7 +23,8 @@ export default function CreatePost() {
 
   const [formData, setFormData] = useState(initialState)
 
-  const dispatch = useDispatch()
+  // const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
 
   useEffect(() => {
     setFormData(itemEdit || initialState)
@@ -29,9 +32,9 @@ export default function CreatePost() {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const formDataWidthId = { ...formData }
-    dispatch(addPost(formDataWidthId))
-    console.log(formDataWidthId)
+    dispatch(addPost(formData))
+    setFormData(initialState)
+    console.log(formData)
   }
   return (
     <form onSubmit={handleSubmit}>
@@ -146,16 +149,17 @@ export default function CreatePost() {
         {itemEdit ? (
           <>
             <button
-              type='submit'
+              // type='submit'
               className='group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-teal-300 to-lime-300 p-0.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-4 focus:ring-lime-200 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 dark:focus:ring-lime-800'
-              onClick={() => dispatch(finishEditingItemPost(formData))}
+              // onClick={() => dispatch(finishEditingItemPost(formData))}
+              onClick={() => dispatch(editingPost(formData))}
             >
               <span className='relative rounded-md bg-white px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900'>
                 Update Post
               </span>
             </button>
             <button
-              type='reset'
+              // type='reset'
               className='group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 p-0.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-4 focus:ring-red-100 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 dark:focus:ring-red-400'
               onClick={() => dispatch(cancelEditingItemPost())}
             >
