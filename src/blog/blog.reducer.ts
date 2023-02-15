@@ -3,6 +3,7 @@ import {
   PayloadAction,
   createAction,
   createReducer,
+  createSlice,
   current,
   nanoid
 } from '@reduxjs/toolkit'
@@ -12,11 +13,65 @@ interface BlogState {
   itemEdit: Post | null
 }
 
-const initalState: BlogState = {
+const initialState: BlogState = {
   postList: initalPostList,
   itemEdit: null
 }
 
+const blogSlice = createSlice({
+  name: 'blog',
+  initialState,
+  reducers: {
+    deleteItemPost: (state, action: PayloadAction<string>) => {
+      const postId = action.payload
+      console.log(current(state))
+      state.postList = state.postList.filter((item) => item.id !== postId)
+    },
+    editingItemPost: (state, action: PayloadAction<string>) => {
+      const postId = action.payload
+      state.itemEdit = state.postList.find((item) => item.id === postId) || null
+    },
+    cancelEditingItemPost: (state) => {
+      state.itemEdit = null
+      console.log(current(state))
+    },
+    finishEditingItemPost: (state, action: PayloadAction<Post>) => {
+      const postId = action.payload.id
+      state.postList.some((item, index) => {
+        if (item.id !== postId) return false
+        state.postList[index] = action.payload
+        return false
+      })
+      state.itemEdit = null
+    },
+    addPost: {
+      reducer: (state, action: PayloadAction<Post>) => {
+        const post = action.payload
+        state.postList.push(post)
+      },
+      prepare: (post: Omit<Post, 'id'>) => {
+        return {
+          payload: {
+            ...post,
+            id: nanoid() // id tự sinh ra được redux hỗ trợ
+          }
+        }
+      }
+    }
+  }
+})
+export const {
+  addPost,
+  cancelEditingItemPost,
+  deleteItemPost,
+  editingItemPost,
+  finishEditingItemPost
+} = blogSlice.actions
+
+const blogReducer = blogSlice.reducer
+export default blogReducer
+
+/** 
 export const addPost = createAction(
   'blog/addPost',
   function (post: Omit<Post, 'id'>) {
@@ -35,7 +90,7 @@ export const finishEditingItemPost = createAction<Post>(
   'blog/finishEditingItemPost'
 )
 
-const blogReducer = createReducer(initalState, (builder) => {
+const blogReducer = createReducer(initialState, (builder) => {
   builder
     .addCase(addPost, (state, action) => {
       const post = action.payload
@@ -77,10 +132,12 @@ const blogReducer = createReducer(initalState, (builder) => {
       }
     )
 })
+*/
 
+/** 
 // Cách dưới tiện hơn nhưng lại khó setup typescript hơn, nếu dùng với js thông thường thì rất nhanh và tiện
 // const blogReducer = createReducer(
-//   initalState,
+//   initialState,
 //   {
 //     [addPost.type]: (state, action: PayloadAction<Post>) => {
 //       const post = action.payload
@@ -121,5 +178,5 @@ const blogReducer = createReducer(initalState, (builder) => {
 //     console.log('default', state)
 //   }
 // )
-
-export default blogReducer
+*/
+// export default blogReducer
