@@ -1,5 +1,6 @@
 import { Post } from 'types/blog.type'
 import {
+  AsyncThunk,
   PayloadAction,
   createAsyncThunk,
   createSlice,
@@ -9,11 +10,20 @@ import http from 'utils/http'
 interface BlogState {
   postList: Post[]
   itemEdit: Post | null
+  loading: boolean
+  currentRequestId: undefined | string
 }
+type GenericAsyncThunk = AsyncThunk<unknown, unknown, any>
+
+type PendingAction = ReturnType<GenericAsyncThunk['pending']>
+type RejectedAction = ReturnType<GenericAsyncThunk['rejected']>
+type FulfilledAction = ReturnType<GenericAsyncThunk['fulfilled']>
 
 const initialState: BlogState = {
   postList: [],
-  itemEdit: null
+  itemEdit: null,
+  loading: false,
+  currentRequestId: undefined
 }
 
 export const getPostList = createAsyncThunk(
@@ -29,20 +39,34 @@ export const getPostList = createAsyncThunk(
 export const addPost = createAsyncThunk(
   'blog/addPost',
   async (body: Omit<Post, 'id'>, thunkAPI) => {
-    const response = await http.post<Post>('posts', body, {
-      signal: thunkAPI.signal
-    })
-    return response.data
+    try {
+      const response = await http.post<Post>('posts', body, {
+        signal: thunkAPI.signal
+      })
+      return response.data
+    } catch (error: any) {
+      if (error.name === 'AxiosError' && error.response.status === 422) {
+        return thunkAPI.rejectWithValue(error.response.data) // ta phải có rejectWithValue này thì nó mới trả về data error mà dưới server đã setup cho ta, và nơi dispatch thằng này mới nhận đúng đoạn data đó khi có lỗi, còn nếu không thì nó sẽ trả data error mà redux tự setup
+      }
+      throw error
+    }
   }
 )
 
 export const editingPost = createAsyncThunk(
   'blog/editingPost',
   async (body: Post, thunkAPI) => {
-    const response = await http.put<Post>(`posts/${body.id}`, body, {
-      signal: thunkAPI.signal
-    })
-    return response.data
+    try {
+      const response = await http.put<Post>(`posts/${body.id}`, body, {
+        signal: thunkAPI.signal
+      })
+      return response.data
+    } catch (error: any) {
+      if (error.name === 'AxiosError' && error.response.status === 422) {
+        return thunkAPI.rejectWithValue(error.response.data) // ta phải có rejectWithValue này thì nó mới trả về data error mà dưới server đã setup cho ta, và nơi dispatch thằng này mới nhận đúng đoạn data đó khi có lỗi, còn nếu không thì nó sẽ trả data error mà redux tự setup
+      }
+      throw error
+    }
   }
 )
 
@@ -91,10 +115,24 @@ const blogSlice = createSlice({
         console.log('postId', postId)
         state.postList = state.postList.filter((item) => item.id !== postId)
       })
-      .addMatcher(
-        (action) => action.type.includes('delete'),
-        (state) => {
-          console.log('đã thỏa addMatcher:', current(state))
+      .addMatcher<PendingAction>(
+        (action) => action.type.endsWith('pending'),
+        (state, action) => {
+          state.loading = true
+          state.currentRequestId = action.meta.requestId
+        }
+      )
+      .addMatcher<RejectedAction | FulfilledAction>(
+        (action) =>
+          action.type.endsWith('rejected') || action.type.endsWith('fulfilled'),
+        (state, action) => {
+          if (
+            state.loading &&
+            state.currentRequestId === action.meta.requestId
+          ) {
+            state.loading = false
+            state.currentRequestId = undefined
+          }
         }
       )
       .addDefaultCase((state, action) => {

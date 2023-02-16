@@ -1,3 +1,4 @@
+import { unwrapResult } from '@reduxjs/toolkit'
 import {
   addPost,
   cancelEditingItemPost,
@@ -9,7 +10,9 @@ import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, useAppDispatch } from 'store'
 import { Post } from 'types/blog.type'
-
+interface ErrorForm {
+  publishDate: string
+}
 const initialState: Post = {
   description: '',
   featuredImage: '',
@@ -22,6 +25,7 @@ export default function CreatePost() {
   const itemEdit = useSelector((state: RootState) => state.blog.itemEdit)
 
   const [formData, setFormData] = useState(initialState)
+  const [errorForm, setErrorForm] = useState<null | ErrorForm>(null)
 
   // const dispatch = useDispatch()
   const dispatch = useAppDispatch()
@@ -30,10 +34,33 @@ export default function CreatePost() {
     setFormData(itemEdit || initialState)
   }, [itemEdit])
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    dispatch(addPost(formData))
-    setFormData(initialState)
+    if (itemEdit) {
+      dispatch(editingPost(formData))
+        .unwrap() // khi ta dispatch createAsyncThunk thì nó sẽ đóng gói, thằng unwrap này sẽ giúp chúng ta mở gói
+        .then((res) => {
+          setFormData(initialState)
+          if (errorForm) {
+            setErrorForm(null)
+          }
+        })
+        .catch((error) => {
+          setErrorForm(error.error)
+        })
+    } else {
+      try {
+        await dispatch(addPost(formData)).unwrap() // dùng unwrap này thì nó mới trả data ra cho ta ở đây, nếu ta muốn lấy data ở trong component này
+        // unwrapResult(res) đây là cách 2 của unwrap
+        // phải dùng unwrap thì mới catch trong đây được nhé
+        setFormData(initialState)
+        if (errorForm) {
+          setErrorForm(null)
+        }
+      } catch (error: any) {
+        setErrorForm(error.error)
+      }
+    }
     console.log(formData)
   }
   return (
@@ -106,14 +133,20 @@ export default function CreatePost() {
       <div className='mb-6'>
         <label
           htmlFor='publishDate'
-          className='mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300'
+          className={`mb-2 block text-sm font-medium  dark:text-gray-300 ${
+            errorForm?.publishDate ? 'text-red-700' : 'text-gray-900'
+          }`}
         >
           Publish Date
         </label>
         <input
           type='datetime-local'
           id='publishDate'
-          className='block w-56 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500'
+          className={`block w-56 rounded-lg border  p-2.5 text-sm  focus:outline-none  ${
+            errorForm?.publishDate
+              ? 'border-red-500 bg-red-50 text-red-900 placeholder-red-700 focus:border-red-500 focus:ring-red-500'
+              : 'border-gray-300 bg-gray-50 text-gray-900 focus:border-blue-500 focus:ring-blue-500'
+          }`}
           placeholder='Title'
           required
           value={formData.publishDate}
@@ -124,6 +157,12 @@ export default function CreatePost() {
             }))
           }
         />
+        {errorForm?.publishDate && (
+          <p className='mt-2 text-sm text-red-600'>
+            <span className='font-medium'>Lỗi! </span>
+            {errorForm.publishDate}
+          </p>
+        )}
       </div>
       <div className='mb-6 flex items-center'>
         <input
@@ -149,10 +188,10 @@ export default function CreatePost() {
         {itemEdit ? (
           <>
             <button
-              // type='submit'
+              type='submit'
               className='group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-teal-300 to-lime-300 p-0.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-4 focus:ring-lime-200 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 dark:focus:ring-lime-800'
               // onClick={() => dispatch(finishEditingItemPost(formData))}
-              onClick={() => dispatch(editingPost(formData))}
+              // onClick={() => dispatch(editingPost(formData))}
             >
               <span className='relative rounded-md bg-white px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900'>
                 Update Post

@@ -4,6 +4,7 @@ import { RootState, useAppDispatch } from 'store'
 import { useEffect } from 'react'
 import http from 'utils/http'
 import { getPostList } from 'blog/blog.reducer'
+import SkeletonPost from '../SkeletonPost'
 
 // gọi api trong useEffect()
 // nếu gọi thành công thì dispatch action type: "blog/getPostListSuccess"
@@ -13,6 +14,7 @@ import { getPostList } from 'blog/blog.reducer'
 
 export default function PostList() {
   const postList = useSelector((state: RootState) => state.blog.postList)
+  const loading = useSelector((state: RootState) => state.blog.loading)
   const dispatch = useAppDispatch()
   // const dispatch = useDispatch()
   /** 
@@ -57,9 +59,16 @@ export default function PostList() {
           </p>
         </div>
         <div className='grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-2 xl:grid-cols-2 xl:gap-8'>
-          {postList.map((post, index) => {
-            return <PostItem post={post} key={post.id} />
-          })}
+          {loading ? (
+            <>
+              <SkeletonPost />
+              <SkeletonPost />
+            </>
+          ) : (
+            postList.map((post, index) => {
+              return <PostItem post={post} key={post.id} />
+            })
+          )}
         </div>
       </div>
     </div>
